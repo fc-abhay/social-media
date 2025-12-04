@@ -14,30 +14,18 @@ from django.conf import settings
 SECRET_KEY = settings.SECRET_KEY or "twitterbackendsecrete"
 
 
-@api_view(["POST"])
+@api_view(['POST'])
 def registerView(request):
-    username = request.data.get("username")
-    fullName = request.data.get("fullName")
-    email = request.data.get("email")
-    password = request.data.get("password")
-    
-    # Validate required fields
-    if not username or not password or not email or not fullName:
-        return Response(
-            {"error": "All fields are required!!!"},
-            status=status.HTTP_400_BAD_REQUEST
-        )
+    # Validate required fields manually
+    required_fields = ["username", "fullName", "email", "password"]
+    for field in required_fields:
+        if not request.data.get(field):
+            return Response(
+                {"status": "error", "message": f"{field} is required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
-    # Correct payload
-    payload = {
-        "username": username,
-        "fullName": fullName,
-        "email": email,
-        "password": password
-    }
-
-    serializer = UserSerializer(data=payload)
-
+    serializer = UserSerializer(data=request.data)
     if serializer.is_valid():
         serializer.save()
         return Response(
@@ -49,24 +37,18 @@ def registerView(request):
             status=status.HTTP_201_CREATED
         )
 
+    # Send readable error messages
     errors = serializer.errors
-
-    # Custom readable message
     message = ""
-
     if "username" in errors:
-        message = "Username already exists."
+        message = errors["username"][0]
     elif "email" in errors:
-        message = "Email already registered."
+        message = errors["email"][0]
     else:
         message = "Invalid data."
 
     return Response(
-        {
-            "status": "error",
-            "message": message,
-            # "details": errors
-        },
+        {"status": "error", "message": message},
         status=status.HTTP_400_BAD_REQUEST
     )
 
