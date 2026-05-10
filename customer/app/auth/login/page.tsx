@@ -3,18 +3,32 @@ import React, { useState } from "react"
 import Link from "next/link"
 import { motion } from "framer-motion"
 import axiosClient from "@/utils/axiosClient"
+import { toast } from "react-toastify"
+import { useRouter } from "next/navigation"
+import { useAppSelector } from "@/store/store"
+
 
 const LoginPage = () => {
   const [form, setForm] = useState({ username: "", password: "" })
+  const router=useRouter();
+  const [loading,setLoading]=useState<boolean>(false)
 
   const handleChange = (e:any) => {
     setForm({ ...form, [e.target.name]: e.target.value })
   }
 
   const handleSubmit = async(e:any) => {
+    setLoading(true)
     e.preventDefault()
-    const {data} =await axiosClient.post("/auth/login",form)
-    console.log("Data",data)
+    const {data,status} =await axiosClient.post("/auth/login/",form);
+    if(status===200){
+      toast.success(data.message)
+      localStorage.setItem("token",data.token)
+      router.replace("/")
+    }else{
+      toast.error(data.message)
+    }
+    setLoading(false)
   }
 
   return (
@@ -58,9 +72,12 @@ const LoginPage = () => {
           {/* Submit */}
           <button
             type="submit"
+            disabled={loading}
             className="w-full cursor-pointer py-2.5 bg-gradient-to-r from-indigo-600 to-blue-600 text-white rounded-xl font-semibold shadow-md hover:opacity-90 hover:scale-[1.02] transition-all"
           >
-            Login
+            {
+              loading ? "Logging in..." : "Login"
+            }
           </button>
         </form>
 

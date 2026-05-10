@@ -2,18 +2,53 @@
 import React, { useState } from "react"
 import Link from "next/link"
 import { motion } from "framer-motion"
+import axiosClient from "@/utils/axiosClient"
+import { toast } from "react-toastify"
+import { useRouter } from "next/navigation"
 
 const RegisterPage = () => {
   const [form, setForm] = useState({ fullName: "", username: "", email: "", password: "" })
+  const [isLoading,setIsLoading]=useState<boolean>(false)
+  const router=useRouter();
 
   const handleChange = (e:any) => {
     setForm({ ...form, [e.target.name]: e.target.value })
   }
 
-  const handleSubmit = (e:any) => {
-    e.preventDefault()
-    console.log(form)
+  const handleSubmit = async (e: any) => {
+  e.preventDefault();
+  setIsLoading(true);
+
+  try {
+    const { data, status } = await axiosClient.post("/auth/register/", form);
+
+    if (status === 201) {
+      toast.success(data.message);
+      localStorage.setItem("token", data.token);
+      router.replace("/");
+    }
+  } catch (error: any) {
+    // Handle Axios errors properly
+    if (error.response) {
+      // Server responded with an error status (400, 401, 500, etc)
+      toast.error(error.response.data?.message || "Something went wrong");
+      console.log("Server Error:", error.response.data);
+
+    } else if (error.request) {
+      // Request was made but no response received
+      toast.error("No response from server. Please try again.");
+      console.log("Network Error:", error.request);
+
+    } else {
+      // Something else happened
+      toast.error("Unexpected error occurred");
+      console.log("Unexpected Error:", error.message);
+    }
+  } finally {
+    setIsLoading(false);
   }
+};
+
 
   return (
     <div className="min-h-screen flex items-center justify-center  p-4">
@@ -83,9 +118,12 @@ const RegisterPage = () => {
           {/* Submit */}
           <button
             type="submit"
+            disabled={isLoading}
             className="w-full py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-semibold shadow-md hover:opacity-90 hover:scale-[1.02] transition-all"
           >
-            Register
+            {
+              isLoading ? "Registering" : "Register"
+            }
           </button>
         </form>
 
